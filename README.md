@@ -2,13 +2,15 @@
 
 **Novera Hub Launcher** is a standalone desktop app that lets you open **Novera Hub** in one click. You sign in with the same credentials as the main Novera Hub app, then use **Launch** to open the Hub in a new window. Your session is kept so you stay logged in until you log out or it expires.
 
+**When this launcher lives inside NoveraHub:** You can set `HUB_URL` and `GITHUB_REPO` in the **parent** repo’s `.env.local` (NoveraHub root). The launcher build will use that file if `launcher/.env.local` is missing, so you only maintain one `.env.local` for both Hub and launcher.
+
 ## What is Novera Hub?
 
 **Novera Hub** is the main web application. The launcher is a separate, small desktop app that talks to Novera Hub (e.g. at noverahub.com or your own instance) and opens it for you.
 
 ## Login: same as the website (database connected)
 
-The launcher **does not have its own login or database**. It uses the **website system**:
+The launcher **does not have its own login or database**. It uses the **same login system as the website** (e.g. **noverahub.com**) — the same API and code you have in the main **NoveraHub** folder (`app/api/auth/login`):
 
 - When you click **Log in**, the launcher sends your username and password to the Hub at **HUB_URL** (`/api/auth/login`).
 - The **Novera Hub** app (the website) checks credentials against its **database** (Turso), verifies the time-based password, creates a session, and sets the cookie.

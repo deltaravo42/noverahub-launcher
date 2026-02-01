@@ -34,6 +34,9 @@ try {
   }
 } catch (_) {}
 
+// Chrome User-Agent for Hub requests so the Hub (or WAF) treats launcher like the website
+const CHROME_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+
 /** Persistent session so login survives app restart. */
 const PERSISTENT_PARTITION = 'persist:noverahub';
 function getSession() {
@@ -300,6 +303,7 @@ function loginViaNode(username, password) {
     const u = new URL(HUB_URL + '/api/auth/login');
     const isHttps = u.protocol === 'https:';
     const body = JSON.stringify({ username: (username || '').trim(), password: password || '' });
+    const origin = HUB_URL.replace(/\/$/, '');
     const opts = {
       hostname: u.hostname,
       port: u.port || (isHttps ? 443 : 80),
@@ -311,6 +315,9 @@ function loginViaNode(username, password) {
         Accept: 'application/json',
         'User-Agent': CHROME_USER_AGENT,
         'X-Client': 'novera-launcher',
+        Origin: origin,
+        Referer: origin + '/login',
+        'Accept-Language': 'en-US,en;q=0.9',
       },
     };
     if (isHttps && (u.hostname === 'localhost' || u.hostname === '127.0.0.1')) {
@@ -365,8 +372,9 @@ function loginViaNode(username, password) {
 
 ipcMain.handle('auth-login', async (_event, { username, password }) => {
   if (!username || !password) return { ok: false, error: 'Please enter username and password.' };
+  // Try browser path first (same as website). If it fails for any reason, try Node path (direct HTTPS with Chrome UA).
   let result = await loginViaBrowserSameAsWebsite(username, password);
-  if (!result.ok && result.error && (result.error.includes('fetch') || result.error.includes('timeout') || result.error.includes('load'))) {
+  if (!result.ok) {
     result = await loginViaNode(username, password);
   }
   if (result.ok) {
@@ -759,9 +767,6 @@ ipcMain.on('window-maximize', () => {
   else mainWindow.maximize();
 });
 ipcMain.on('window-close', () => mainWindow?.close());
-
-// Use a standard Chrome User-Agent for Hub requests so the Hub (or WAF) doesn't return 503 for Electron/launcher
-const CHROME_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
 app.whenReady().then(() => {
   Menu.setApplicationMenu(null);

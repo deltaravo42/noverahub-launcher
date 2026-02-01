@@ -26,6 +26,7 @@
     var serverTimePart = document.getElementById('server-time-part');
     var loginPasswordHint = document.getElementById('login-password-hint');
     var versionEl = document.getElementById('version');
+    var linkHub = document.getElementById('link-hub');
 
     var userAreaGuest = document.getElementById('user-area-guest');
     var userAreaLoggedIn = document.getElementById('user-area-logged-in');
@@ -78,6 +79,12 @@
     }).catch(function () {
       hubUrl = 'https://noverahub.com';
       if (versionEl) versionEl.textContent = 'v1.0.0';
+      startServerTime();
+      fetchLauncherContent();
+      launcher.getProfile().then(function (profile) {
+        if (profile) setUserUI(profile);
+        else fetchProfile().then(setUserUI);
+      });
     });
 
     var launcherContent = { notices: [], events: [], news: [] };
