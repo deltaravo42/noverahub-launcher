@@ -6,6 +6,16 @@
 
 **Novera Hub** is the main web application. The launcher is a separate, small desktop app that talks to Novera Hub (e.g. at noverahub.com or your own instance) and opens it for you.
 
+## Login: same as the website (database connected)
+
+The launcher **does not have its own login or database**. It uses the **website system**:
+
+- When you click **Log in**, the launcher sends your username and password to the Hub at **HUB_URL** (`/api/auth/login`).
+- The **Novera Hub** app (the website) checks credentials against its **database** (Turso), verifies the time-based password, creates a session, and sets the cookie.
+- The launcher stores that session cookie and reuses it — so you’re logged in with the **same account and database** as on the website. One login, same data everywhere.
+
+So the launcher is already connected to the website system and the database **through the Hub**. As long as the Hub at **HUB_URL** is running and can reach its database (Turso), login from the launcher works.
+
 ## What the launcher does
 
 1. **Log in** — Use your Novera Hub username and time-based password. On success, the launcher stores your session so you stay logged in across restarts (e.g. until you log out or the session expires, typically 30 days).
@@ -33,8 +43,8 @@ The launcher uses only two settings:
 - **HUB_URL** — Where your Novera Hub is deployed (e.g. `https://noverahub.com`). The launcher connects here for login, launch, and content (notices/events/news). Your **Hub** (the web app) uses Turso, Pusher, R2, NEXTAUTH, etc. — the launcher does not talk to those directly. It talks to the Hub, and the Hub uses your database and services.
 - **GITHUB_REPO** — The launcher repo for **Check for updates** (e.g. `deltaravo42/noverahub-launcher`).
 
-So the launcher is already connected to your backend and database **through HUB_URL**: set `HUB_URL` to your Hub’s URL, and users who use the launcher are using your Turso, Pusher, R2, and the rest of your stack via the Hub.
+So the launcher is already connected to your backend and database **through HUB_URL**: set `HUB_URL` to your Hub’s main domain (e.g. `https://noverahub.com`), and users who use the launcher are using your Turso, Pusher, R2, and the rest of your stack via the Hub.
 
 ## About this repo
 
-This repository contains only the **launcher** (the desktop app). The main Novera Hub application lives in a separate repository.
+This repository contains only the **launcher** (the desktop app). The main Novera Hub application lives in a separate repository (e.g. `NoveraHub`).

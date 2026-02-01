@@ -474,14 +474,18 @@
         .then(function (result) {
           lastUpdateResult = result;
           if (result.hasUpdate) {
-            setToast('Update available: v' + (result.latestVersion || '').replace(/^v/i, ''));
-            setAboutUpdateStatus('Update available: v' + (result.latestVersion || '').replace(/^v/i, '') + ' — click Download & install in the dialog.');
+            var av = (result.latestVersion || '').match(/(\d+\.\d+\.\d+(?:\.\d+)?)/);
+            var avStr = av ? ('v' + av[1]) : (result.latestVersion ? ('v' + String(result.latestVersion).replace(/^v/i, '')) : '');
+            setToast('Update available: ' + avStr);
+            setAboutUpdateStatus('Update available: ' + avStr + ' — click Download & install in the dialog.');
             showUpdateAvailable(result);
           } else if (result.error) {
             setToast(result.error, 6000);
             setAboutUpdateStatus(result.error);
           } else {
-            var latest = result.latestVersion ? ('v' + String(result.latestVersion).replace(/^v/i, '')) : (versionEl ? versionEl.textContent : 'v1.0.0');
+            var raw = result.latestVersion ? String(result.latestVersion) : '';
+            var verMatch = raw.match(/(\d+\.\d+\.\d+(?:\.\d+)?)/);
+            var latest = verMatch ? ('v' + verMatch[1]) : (raw ? ('v' + raw.replace(/^v/i, '')) : (versionEl ? versionEl.textContent : 'v1.0.0'));
             setToast('You\'re on the latest version (' + latest + ').');
             setAboutUpdateStatus('You\'re on the latest version (' + latest + ').');
           }
@@ -497,9 +501,16 @@
     function showAbout() {
       if (aboutVersionEl && versionEl) aboutVersionEl.textContent = versionEl.textContent;
       if (lastUpdateResult) {
-        if (lastUpdateResult.hasUpdate) setAboutUpdateStatus('Update available: v' + (lastUpdateResult.latestVersion || '').replace(/^v/i, ''));
+        if (lastUpdateResult.hasUpdate) {
+          var u = (lastUpdateResult.latestVersion || '').match(/(\d+\.\d+\.\d+(?:\.\d+)?)/);
+          setAboutUpdateStatus('Update available: ' + (u ? 'v' + u[1] : (lastUpdateResult.latestVersion || '')));
+        }
         else if (lastUpdateResult.error) setAboutUpdateStatus(lastUpdateResult.error);
-        else setAboutUpdateStatus('You\'re on the latest version (v' + (lastUpdateResult.latestVersion || lastUpdateResult.currentVersion || '') + ').');
+        else {
+          var r = lastUpdateResult.latestVersion || lastUpdateResult.currentVersion || '';
+          var m = String(r).match(/(\d+\.\d+\.\d+(?:\.\d+)?)/);
+          setAboutUpdateStatus('You\'re on the latest version (' + (m ? 'v' + m[1] : r || '—') + ').');
+        }
       } else {
         setAboutUpdateStatus('Click "Check for updates" to see if a new version is available.');
       }
@@ -513,7 +524,9 @@
       pendingDownloadUrl = result.downloadUrl || '';
       if (updateMessageEl) {
         var current = versionEl ? versionEl.textContent : 'v1.0.0';
-        updateMessageEl.textContent = 'Version ' + (result.latestVersion || '') + ' is available. You have ' + current + '.';
+        var newVer = (result.latestVersion || '').match(/(\d+\.\d+\.\d+(?:\.\d+)?)/);
+        var newStr = newVer ? ('v' + newVer[1]) : (result.latestVersion || '');
+        updateMessageEl.textContent = 'Version ' + newStr + ' is available. You have ' + current + '.';
       }
       if (updateAvailableEl) updateAvailableEl.removeAttribute('hidden');
     }

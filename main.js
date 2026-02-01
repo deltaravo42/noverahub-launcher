@@ -309,6 +309,7 @@ function loginViaNode(username, password) {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(body, 'utf8'),
         Accept: 'application/json',
+        'User-Agent': CHROME_USER_AGENT,
         'X-Client': 'novera-launcher',
       },
     };
@@ -550,7 +551,9 @@ function fetchReleasesFromFeed() {
           const titleMatch = entry.match(/<title[^>]*>([^<]+)<\/title>/);
           const link = linkMatch ? linkMatch[1].replace(/&amp;/g, '&') : null;
           const title = titleMatch ? titleMatch[1].trim() : '';
-          const ver = (title.replace(/^Release\s+/i, '').replace(/^v/i, '') || '').trim();
+          // Extract semver from title (e.g. "Novera Hub Launcher v1.0.4" or "Release v1.1.2" -> "1.0.4" / "1.1.2")
+          const verMatch = title.match(/(\d+\.\d+\.\d+(?:\.\d+)?)/);
+          const ver = verMatch ? verMatch[1] : (title.replace(/^Release\s+/i, '').replace(/^v/i, '') || '').trim();
           if (link && ver) resolve({ releaseUrl: link, latestVersion: ver });
           else resolve(null);
         } catch (_) {
@@ -757,8 +760,12 @@ ipcMain.on('window-maximize', () => {
 });
 ipcMain.on('window-close', () => mainWindow?.close());
 
+// Use a standard Chrome User-Agent for Hub requests so the Hub (or WAF) doesn't return 503 for Electron/launcher
+const CHROME_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+
 app.whenReady().then(() => {
   Menu.setApplicationMenu(null);
+  getSession().setUserAgent(CHROME_USER_AGENT);
   createWindow();
 });
 app.on('before-quit', () => {
