@@ -16,7 +16,7 @@
 
 ## Check for updates
 
-The launcher can check for new versions (menu → **Check for updates**). This repo ([deltaravo42/noverahub-launcher](https://github.com/deltaravo42/noverahub-launcher)) is **public** — no GitHub token is needed. If you see "Repo not found or no access", remove any `launcher-config.json` from `%APPDATA%\NoveraHub Launcher` and try again.
+The launcher uses the **public** GitHub API only (no token, no config). Menu → **Check for updates** checks [deltaravo42/noverahub-launcher](https://github.com/deltaravo42/noverahub-launcher) for new releases. When an update is available you can **Download & install** from inside the launcher (installer runs automatically) or **Open release page** in your browser.
 
 ## About this repo
 

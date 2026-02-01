@@ -507,28 +507,19 @@ ipcMain.handle('check-for-updates', async () => {
 
   if (!GITHUB_REPO) return out({ hasUpdate: false, error: 'No GitHub repo configured. Set GITHUB_REPO in launcher .env.local and rebuild.' });
 
-  let res = await fetchReleases(true).catch((err) => ({ statusCode: 0, body: '', err }));
+  // Always use public API (no token) so public repos like deltaravo42/noverahub-launcher work without any config
+  const res = await fetchReleases(false).catch((err) => ({ statusCode: 0, body: '', err }));
   if (res.err) return out({ hasUpdate: false, error: 'Network error: ' + (res.err.message || 'Check internet.') });
-
-  if (res.statusCode === 404 && getGitHubToken()) {
-    res = await fetchReleases(false).catch(() => res);
-    if (res.statusCode === 200) {
-      res._retriedWithoutToken = true;
-    }
-  }
 
   const statusCode = res.statusCode;
   const body = res.body || '';
 
   if (statusCode !== 200) {
-    if (statusCode === 401) return out({ hasUpdate: false, error: 'GitHub token invalid or expired. Update launcher-config.json.' });
+    if (statusCode === 401) return out({ hasUpdate: false, error: 'GitHub returned 401. Check your connection and try again.' });
     if (statusCode === 403) return out({ hasUpdate: false, error: 'GitHub rate limit or access denied. Try again later.' });
     if (statusCode === 404) {
       const repoHint = GITHUB_REPO ? ' (using: ' + GITHUB_REPO + ')' : '';
-      const msg = getGitHubToken()
-        ? 'Repo not found or no access.' + repoHint + ' This repo is public — no token needed. Remove launcher-config.json (see %APPDATA%\\NoveraHub Launcher) and try again.'
-        : 'Private repo: add a GitHub token in launcher-config.json (see README).' + repoHint;
-      return out({ hasUpdate: false, error: msg });
+      return out({ hasUpdate: false, error: 'Repo not found or not public.' + repoHint + ' Check that the repo exists and is public at https://github.com/' + (GITHUB_REPO || 'owner/repo') });
     }
     return out({ hasUpdate: false, error: 'GitHub returned ' + statusCode });
   }
