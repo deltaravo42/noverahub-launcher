@@ -475,28 +475,54 @@ function getGitHubToken() {
   return null;
 }
 
-/** Do one GitHub API request for releases; useToken = true to send Bearer token. */
+/** Do one GitHub API request for releases. Follows redirects. useToken = true to send Bearer token (we always use false for public repo). */
 function fetchReleases(useToken) {
   const current = app.getVersion();
   const token = useToken ? getGitHubToken() : null;
-  const headers = { 'User-Agent': 'NoveraHubLauncher/' + current, Accept: 'application/vnd.github.v3+json' };
+  const headers = {
+    'User-Agent': 'NoveraHubLauncher/' + current + ' (https://github.com/deltaravo42/noverahub-launcher)',
+    Accept: 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28',
+  };
   if (token) headers.Authorization = 'Bearer ' + token;
 
-  return new Promise((resolve, reject) => {
+  const requestUrl = 'https://api.github.com/repos/' + encodeURIComponent(GITHUB_REPO) + '/releases?per_page=30';
+  const maxRedirects = 5;
+
+  function doRequest(url, redirectCount, resolve, reject) {
+    let parsed;
+    try {
+      parsed = new URL(url);
+    } catch (e) {
+      return reject(e);
+    }
     const opts = {
-      hostname: 'api.github.com',
-      path: '/repos/' + encodeURIComponent(GITHUB_REPO) + '/releases?per_page=30',
+      hostname: parsed.hostname,
+      path: parsed.pathname + parsed.search,
       method: 'GET',
       headers,
+      port: parsed.port || (parsed.protocol === 'https:' ? 443 : 80),
     };
-    const req = https.request(opts, (res) => {
+    const mod = parsed.protocol === 'https:' ? https : http;
+    const req = mod.request(opts, (res) => {
+      const status = res.statusCode;
+      if (status >= 300 && status < 400 && res.headers.location && redirectCount < maxRedirects) {
+        let next = res.headers.location;
+        if (next.startsWith('/')) next = parsed.origin + next;
+        res.resume(); // consume body so the connection can be reused
+        return doRequest(next, redirectCount + 1, resolve, reject);
+      }
       let body = '';
       res.on('data', (c) => { body += c; });
-      res.on('end', () => resolve({ statusCode: res.statusCode, body }));
+      res.on('end', () => resolve({ statusCode: status, body }));
     });
     req.on('error', reject);
     req.setTimeout(20000, () => { req.destroy(); reject(new Error('Request timed out.')); });
     req.end();
+  }
+
+  return new Promise((resolve, reject) => {
+    doRequest(requestUrl, 0, resolve, reject);
   });
 }
 
@@ -519,7 +545,8 @@ ipcMain.handle('check-for-updates', async () => {
     if (statusCode === 403) return out({ hasUpdate: false, error: 'GitHub rate limit or access denied. Try again later.' });
     if (statusCode === 404) {
       const repoHint = GITHUB_REPO ? ' (using: ' + GITHUB_REPO + ')' : '';
-      return out({ hasUpdate: false, error: 'Repo not found or not public.' + repoHint + ' Check that the repo exists and is public at https://github.com/' + (GITHUB_REPO || 'owner/repo') });
+      const repoUrl = 'https://github.com/' + (GITHUB_REPO || 'owner/repo');
+      return out({ hasUpdate: false, error: 'Repo not found or not public.' + repoHint + ' Check ' + repoUrl + ' — you can download the latest release from the Releases page there.' });
     }
     return out({ hasUpdate: false, error: 'GitHub returned ' + statusCode });
   }
