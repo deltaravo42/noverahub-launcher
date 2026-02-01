@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' http://localhost:* http://127.0.0.1:* https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; script-src 'self'; img-src 'self' data: https: http://localhost:* http://127.0.0.1:*;" />
+  <title>Novera Hub Launcher</title>
+  <link rel="icon" href="assets/icon.png" type="image/png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css" rel="stylesheet" crossorigin="anonymous" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="top-bar" id="title-bar">
+      <div class="top-bar-drag">
+        <img src="assets/icon.png" alt="" class="top-bar-logo" />
+        <span class="top-bar-title">NOVERA HUB LAUNCHER</span>
+      </div>
+      <div class="top-bar-actions">
+        <div class="user-area" id="user-area-guest">
+          <button type="button" class="top-bar-btn" id="btn-login" title="Log in">
+            <i class="fa-solid fa-user"></i>
+            <span>Log In</span>
+          </button>
+        </div>
+        <div class="user-area user-area-logged-in" id="user-area-logged-in" hidden>
+          <button type="button" class="user-menu-trigger" id="user-menu-trigger" title="User menu">
+            <span class="user-menu-avatar" id="top-user-avatar">—</span>
+            <span class="user-menu-name" id="top-user-name">User</span>
+            <i class="fa-solid fa-chevron-down user-menu-chevron"></i>
+          </button>
+          <div class="user-menu-dropdown" id="user-menu-dropdown" hidden>
+            <button type="button" class="user-menu-item" id="user-menu-launch"><i class="fa-solid fa-play"></i> Launch Novera Hub</button>
+            <button type="button" class="user-menu-item user-menu-item-danger" id="user-menu-logout"><i class="fa-solid fa-right-from-bracket"></i> Log out</button>
+          </div>
+        </div>
+        <button type="button" class="title-btn" id="btn-minimize" title="Minimize" aria-label="Minimize"><i class="fa-solid fa-minus"></i></button>
+        <button type="button" class="title-btn" id="btn-maximize" title="Maximize" aria-label="Maximize"><i class="fa-solid fa-square"></i></button>
+        <button type="button" class="title-btn title-btn-close" id="btn-close" title="Close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar-left">
+        <div class="sidebar-accent"></div>
+        <div class="sidebar-brand">
+          <div class="sidebar-logo">
+            <img src="assets/icon.png" alt="Novera Hub" class="sidebar-logo-img" />
+          </div>
+          <span class="sidebar-brand-text">LAUNCHER</span>
+        </div>
+        <div class="sidebar-spacer"></div>
+        <div class="sidebar-profile">
+          <div class="sidebar-avatar-wrap">
+            <div class="sidebar-avatar" id="user-avatar">NH</div>
+          </div>
+          <span class="sidebar-user" id="user-label">Guest</span>
+          <span class="sidebar-status" id="sidebar-status">Not signed in</span>
+        </div>
+      </aside>
+
+      <main class="main">
+        <div class="hero">
+          <div class="hero-bg">
+            <div class="hero-gradient"></div>
+            <div class="hero-pattern"></div>
+            <img src="assets/splash-nh.png" alt="" class="hero-bg-img" onerror="this.style.display='none'" />
+          </div>
+          <div class="hero-overlay">
+            <p class="hero-label">NOVERA HUB</p>
+            <h2 class="hero-title">Launcher</h2>
+            <p class="hero-tagline">Cloud storage, friends, real-time chat — open in browser</p>
+          </div>
+        </div>
+
+        <div class="main-bottom">
+          <div class="promo-card" id="promo-card">
+            <div class="promo-inner">
+              <p class="promo-label" id="promo-label">GET STARTED</p>
+              <p class="promo-title" id="promo-title">Open Novera Hub</p>
+              <p class="promo-desc" id="promo-desc">Log in here, then click Launch to open Novera Hub.</p>
+            </div>
+          </div>
+          <div class="news-panel">
+            <div class="news-tabs">
+              <button type="button" class="news-tab news-tab-active" data-tab="notices">Notices</button>
+              <button type="button" class="news-tab" data-tab="events">Events</button>
+              <button type="button" class="news-tab" data-tab="news">News</button>
+            </div>
+            <div class="news-list" id="news-list">
+              <div class="news-item news-item-placeholder" data-tab="notices">
+                <span class="news-item-title">Loading…</span>
+                <span class="news-item-date">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="main-actions">
+          <button type="button" class="btn-launch" id="btn-launch">
+            <i class="fa-solid fa-play"></i>
+            <span>Launch</span>
+          </button>
+          <div class="main-menu-wrap">
+            <button type="button" class="btn-menu" id="btn-menu" title="Menu" aria-label="Menu" aria-expanded="false" aria-haspopup="true"><i class="fa-solid fa-bars"></i></button>
+            <div class="main-menu-dropdown" id="main-menu-dropdown" hidden role="menu">
+              <button type="button" class="main-menu-item" id="main-menu-launch" role="menuitem"><i class="fa-solid fa-play"></i> Launch Novera Hub</button>
+              <button type="button" class="main-menu-item" id="main-menu-refresh-content" role="menuitem"><i class="fa-solid fa-rotate"></i> Refresh content</button>
+              <button type="button" class="main-menu-item" id="main-menu-check-updates" role="menuitem"><i class="fa-solid fa-arrows-rotate"></i> Check for updates</button>
+              <button type="button" class="main-menu-item" id="main-menu-about" role="menuitem"><i class="fa-solid fa-circle-info"></i> About</button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <div class="login-overlay" id="login-overlay" hidden>
+      <div class="login-backdrop"></div>
+      <div class="login-card">
+        <div class="login-header">
+          <img src="assets/icon.png" alt="" class="login-logo" />
+          <h2>Sign in</h2>
+          <p>Time-based password — same as the Novera Hub website.</p>
+        </div>
+        <div class="login-time" id="login-time">
+          <i class="fa-solid fa-clock"></i>
+          <span>Server time: <strong id="server-time-display">—</strong></span>
+          <span class="login-time-hint">Password ends with <strong id="server-time-part">—</strong></span>
+        </div>
+        <form class="login-form" id="login-form">
+          <div class="field">
+            <label for="login-username">Username</label>
+            <div class="input-wrap">
+              <i class="fa-solid fa-user"></i>
+              <input type="text" id="login-username" name="username" placeholder="e.g. johndoe" autocomplete="username" required />
+            </div>
+          </div>
+          <div class="field">
+            <label for="login-password">Password</label>
+            <div class="input-wrap">
+              <i class="fa-solid fa-lock"></i>
+              <input type="password" id="login-password" name="password" placeholder="Time-based password" autocomplete="current-password" required />
+            </div>
+            <p class="field-hint" id="login-password-hint">First letter of username + time (e.g. J1230)</p>
+          </div>
+          <div class="login-error" id="login-error" role="alert" hidden></div>
+          <button type="submit" class="btn btn-primary btn-block" id="login-submit">
+            <i class="fa-solid fa-right-to-bracket"></i>
+            <span>Sign in</span>
+          </button>
+          <button type="button" class="btn btn-ghost btn-block" id="login-back">Back</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="about-overlay" id="about-overlay" hidden>
+      <div class="about-backdrop"></div>
+      <div class="about-card">
+        <div class="about-header">
+          <img src="assets/icon.png" alt="" class="about-logo" />
+          <h2>Novera Hub Launcher</h2>
+          <p class="about-version" id="about-version">v1.0.0</p>
+        </div>
+        <div class="about-body">
+          <p>Standalone launcher for Novera Hub — sign in once, then launch the app in a single click.</p>
+          <ul class="about-features">
+            <li><i class="fa-solid fa-check"></i> Cloud storage &amp; file sharing</li>
+            <li><i class="fa-solid fa-check"></i> RovaChat — friends &amp; real-time chat</li>
+            <li><i class="fa-solid fa-check"></i> Same session as the website</li>
+          </ul>
+          <div class="about-updates" id="about-updates">
+            <p class="about-update-status" id="about-update-status">—</p>
+            <button type="button" class="btn btn-ghost btn-block" id="about-check-updates"><i class="fa-solid fa-arrows-rotate"></i> Check for updates</button>
+          </div>
+          <p class="about-footer">&copy; 2026 Novera Hub | Novera Studios Ltd</p>
+        </div>
+        <button type="button" class="btn btn-primary btn-block about-close" id="about-close"><i class="fa-solid fa-times"></i> Close</button>
+      </div>
+    </div>
+
+    <div class="item-detail-overlay" id="item-detail-overlay" hidden>
+      <div class="item-detail-backdrop"></div>
+      <div class="item-detail-card">
+        <div class="item-detail-header">
+          <span class="item-detail-badge" id="item-detail-badge">Notices</span>
+          <span class="item-detail-date" id="item-detail-date">—</span>
+        </div>
+        <h2 class="item-detail-title" id="item-detail-title">Title</h2>
+        <div class="item-detail-body" id="item-detail-body">No details.</div>
+        <button type="button" class="btn btn-primary btn-block item-detail-close" id="item-detail-close"><i class="fa-solid fa-times"></i> Close</button>
+      </div>
+    </div>
+
+    <div class="update-available" id="update-available" hidden>
+      <div class="update-backdrop"></div>
+      <div class="update-card">
+        <div class="update-header">
+          <i class="fa-solid fa-download update-icon"></i>
+          <h2>Update available</h2>
+          <p id="update-message">A new version is available.</p>
+        </div>
+        <div class="update-actions">
+          <button type="button" class="btn btn-primary" id="update-download"><i class="fa-solid fa-external-link"></i> Download</button>
+          <button type="button" class="btn btn-ghost" id="update-dismiss">Later</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  </div>
+  <script src="renderer.js"></script>
+</body>
+</html>

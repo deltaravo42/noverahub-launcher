@@ -1,0 +1,86 @@
+{
+  "name": "novera-hub-launcher",
+  "version": "1.0.4",
+  "description": "Standalone launcher for Novera Hub",
+  "main": "main.js",
+  "author": "Novera Hub",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "pack": "electron-builder --dir",
+    "pre-dist": "node scripts/embed-launcher-config.js && node scripts/generate-icon-ico.js && node scripts/generate-installer-sidebar.js",
+    "dist": "npm run pre-dist && electron-builder",
+    "dist:clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\" && npm run dist",
+    "generate-icon": "node scripts/generate-icon-ico.js",
+    "postinstall": "node scripts/brand-noverahub-dev.js",
+    "brand-noverahub-dev": "node scripts/brand-noverahub-dev.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "electron": "^40.1.0",
+    "electron-builder": "^26.7.0",
+    "jimp": "^1.6.0",
+    "rcedit": "^5.0.2",
+    "to-ico": "^1.0.1"
+  },
+  "overrides": {
+    "zod": "3.23.8"
+  },
+  "build": {
+    "appId": "com.noverahub.launcher",
+    "productName": "NoveraHub Launcher",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "styles.css",
+      "renderer.js",
+      "build-config.json",
+      "assets/**"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico",
+      "signAndEditExecutable": false,
+      "executableName": "NoveraHub Launcher"
+    },
+    "afterPack": "scripts/afterPack.js",
+    "afterAllArtifactBuild": "scripts/afterAllArtifactBuild.js",
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerSidebar": "build/installerSidebar.bmp",
+      "uninstallerSidebar": "build/installerSidebar.bmp",
+      "installerHeader": "build/installerHeader.bmp",
+      "uninstallDisplayName": "NoveraHub Launcher",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "menuCategory": "NoveraHub",
+      "shortcutName": "NoveraHub Launcher",
+      "runAfterFinish": true
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "icon": "assets/icon.icns",
+      "category": "public.app-category.utilities"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "icon": "assets/icon.png"
+    }
+  }
+}
