@@ -71,7 +71,7 @@
         setTimeout(function () {
           launcher.checkForUpdates().then(function (result) {
             lastUpdateResult = result;
-            if (result.hasUpdate) setToast('Update available — open the menu to download.');
+            if (result.hasUpdate) setToast('Update available — open the menu to download & install.');
           }).catch(function () {});
         }, 2500);
       }
@@ -454,9 +454,11 @@
     var aboutVersionEl = document.getElementById('about-version');
     var updateAvailableEl = document.getElementById('update-available');
     var updateMessageEl = document.getElementById('update-message');
-    var updateDownloadBtn = document.getElementById('update-download');
+    var updateDownloadInstallBtn = document.getElementById('update-download-install');
+    var updateOpenPageBtn = document.getElementById('update-open-page');
     var updateDismissBtn = document.getElementById('update-dismiss');
     var pendingReleaseUrl = '';
+    var pendingDownloadUrl = '';
     var aboutUpdateStatus = document.getElementById('about-update-status');
     var aboutCheckUpdatesBtn = document.getElementById('about-check-updates');
     var lastUpdateResult = null;
@@ -473,7 +475,7 @@
           lastUpdateResult = result;
           if (result.hasUpdate) {
             setToast('Update available: v' + (result.latestVersion || '').replace(/^v/i, ''));
-            setAboutUpdateStatus('Update available: v' + (result.latestVersion || '').replace(/^v/i, '') + ' — click Download in the dialog.');
+            setAboutUpdateStatus('Update available: v' + (result.latestVersion || '').replace(/^v/i, '') + ' — click Download & install in the dialog.');
             showUpdateAvailable(result);
           } else if (result.error) {
             setToast(result.error, 6000);
@@ -508,6 +510,7 @@
     }
     function showUpdateAvailable(result) {
       pendingReleaseUrl = result.releaseUrl || '';
+      pendingDownloadUrl = result.downloadUrl || '';
       if (updateMessageEl) {
         var current = versionEl ? versionEl.textContent : 'v1.0.0';
         updateMessageEl.textContent = 'Version ' + (result.latestVersion || '') + ' is available. You have ' + current + '.';
@@ -517,6 +520,7 @@
     function hideUpdateAvailable() {
       if (updateAvailableEl) updateAvailableEl.setAttribute('hidden', '');
       pendingReleaseUrl = '';
+      pendingDownloadUrl = '';
     }
 
     if (aboutClose) aboutClose.addEventListener('click', function (e) { e.preventDefault(); hideAbout(); });
@@ -529,8 +533,34 @@
       var updateBackdrop = updateAvailableEl.querySelector('.update-backdrop');
       if (updateBackdrop) updateBackdrop.addEventListener('click', hideUpdateAvailable);
     }
-    if (updateDownloadBtn) {
-      updateDownloadBtn.addEventListener('click', function (e) {
+    if (updateDownloadInstallBtn) {
+      updateDownloadInstallBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (pendingDownloadUrl) {
+          setToast('Downloading installer…');
+          updateDownloadInstallBtn.disabled = true;
+          launcher.downloadAndRunUpdate(pendingDownloadUrl)
+            .then(function (res) {
+              updateDownloadInstallBtn.disabled = false;
+              if (res.success) {
+                setToast('Opening installer. You can close the launcher and run it.', 5000);
+                hideUpdateAvailable();
+              } else {
+                setToast(res.error || 'Download failed.', 6000);
+              }
+            })
+            .catch(function (err) {
+              updateDownloadInstallBtn.disabled = false;
+              setToast((err && err.message) || 'Download failed.', 6000);
+            });
+        } else if (pendingReleaseUrl) {
+          launcher.openExternal(pendingReleaseUrl);
+          hideUpdateAvailable();
+        }
+      });
+    }
+    if (updateOpenPageBtn) {
+      updateOpenPageBtn.addEventListener('click', function (e) {
         e.preventDefault();
         if (pendingReleaseUrl) launcher.openExternal(pendingReleaseUrl);
         hideUpdateAvailable();

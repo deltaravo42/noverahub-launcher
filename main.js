@@ -524,9 +524,10 @@ ipcMain.handle('check-for-updates', async () => {
     if (statusCode === 401) return out({ hasUpdate: false, error: 'GitHub token invalid or expired. Update launcher-config.json.' });
     if (statusCode === 403) return out({ hasUpdate: false, error: 'GitHub rate limit or access denied. Try again later.' });
     if (statusCode === 404) {
+      const repoHint = GITHUB_REPO ? ' (using: ' + GITHUB_REPO + ')' : '';
       const msg = getGitHubToken()
-        ? 'Repo not found or no access. Check GITHUB_REPO (exact owner/repo) and token scope (repo). If repo is public, remove launcher-config.json and try again.'
-        : 'Private repo: add a GitHub token in launcher-config.json (see README).';
+        ? 'Repo not found or no access.' + repoHint + ' This repo is public — no token needed. Remove launcher-config.json (see %APPDATA%\\NoveraHub Launcher) and try again.'
+        : 'Private repo: add a GitHub token in launcher-config.json (see README).' + repoHint;
       return out({ hasUpdate: false, error: msg });
     }
     return out({ hasUpdate: false, error: 'GitHub returned ' + statusCode });
@@ -552,9 +553,68 @@ ipcMain.handle('check-for-updates', async () => {
     }
     const releaseUrl = bestRelease?.html_url || (bestTag ? 'https://github.com/' + GITHUB_REPO + '/releases/tag/' + encodeURIComponent(bestTag) : '');
     const hasUpdate = bestVersion ? compareVersions(bestVersion, current) > 0 : false;
-    return out({ hasUpdate, latestVersion: bestVersion || bestTag, releaseUrl, body: bestRelease?.body || '' });
+    // Windows installer direct download URL (from release assets) for in-app update
+    let downloadUrl = '';
+    const assets = bestRelease?.assets;
+    if (Array.isArray(assets)) {
+      const winSetup = assets.find((a) => (a.name && a.name.includes('Setup') && a.name.endsWith('.exe')));
+      if (winSetup && winSetup.browser_download_url) downloadUrl = winSetup.browser_download_url;
+    }
+    return out({ hasUpdate, latestVersion: bestVersion || bestTag, releaseUrl, downloadUrl, body: bestRelease?.body || '' });
   } catch (e) {
     return out({ hasUpdate: false, error: 'Could not read release list.' });
+  }
+});
+
+/** Download a file from url (follows redirects), save to destPath. Returns Promise<{ success, error? }>. */
+function downloadFile(url, destPath) {
+  return new Promise((resolve) => {
+    const done = (err) => resolve(err ? { success: false, error: err.message } : { success: true });
+    const followRedirect = (location) => {
+      if (!location || typeof location !== 'string') return done(new Error('No redirect location'));
+      const u = location.startsWith('http') ? new URL(location) : new URL(location, url);
+      const mod = u.protocol === 'https:' ? https : http;
+      const opts = { method: 'GET', headers: { 'User-Agent': 'NoveraHubLauncher/' + app.getVersion() } };
+      const req = mod.request(u.href, opts, (res) => {
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          return followRedirect(res.headers.location);
+        }
+        if (res.statusCode !== 200) return done(new Error('Download failed: ' + res.statusCode));
+        const file = fs.createWriteStream(destPath);
+        res.pipe(file);
+        file.on('finish', () => { file.close(); done(null); });
+        file.on('error', (err) => { fs.unlink(destPath, () => {}); done(err); });
+      });
+      req.on('error', done);
+      req.setTimeout(60000, () => { req.destroy(); done(new Error('Download timed out')); });
+      req.end();
+    };
+    followRedirect(url);
+  });
+}
+
+ipcMain.handle('download-and-run-update', async (_event, url) => {
+  if (!url || typeof url !== 'string') return { success: false, error: 'No URL provided.' };
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch (_) {
+    return { success: false, error: 'Invalid URL.' };
+  }
+  const host = parsed.hostname.toLowerCase();
+  const allowed = host === 'github.com' || host.endsWith('.github.com') || host === 'githubusercontent.com' || host.endsWith('.githubusercontent.com');
+  if (!allowed) return { success: false, error: 'Only GitHub release downloads are allowed.' };
+  const fileName = 'NoveraHub-Launcher-Setup.exe';
+  const destPath = path.join(app.getPath('temp'), fileName);
+  try {
+    const result = await downloadFile(url, destPath);
+    if (!result.success) return result;
+    shell.openPath(destPath).then((err) => {
+      if (err) console.error('Launcher: openPath failed', err);
+    });
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: (e && e.message) || 'Download failed.' };
   }
 });
 

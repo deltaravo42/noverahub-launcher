@@ -14,6 +14,10 @@
 
 3. **Notices, Events, News** — The launcher can show content (notices, events, news) provided by the Hub. Admins manage this in **Admin → Launcher manager**. Use **Menu → Refresh content** to reload without restarting the launcher.
 
+## Check for updates
+
+The launcher can check for new versions (menu → **Check for updates**). This repo ([deltaravo42/noverahub-launcher](https://github.com/deltaravo42/noverahub-launcher)) is **public** — no GitHub token is needed. If you see "Repo not found or no access", remove any `launcher-config.json` from `%APPDATA%\NoveraHub Launcher` and try again.
+
 ## About this repo
 
 This repository contains only the **launcher** (the desktop app). The main Novera Hub application lives in a separate repository.

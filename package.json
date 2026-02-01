@@ -1,6 +1,6 @@
 {
   "name": "novera-hub-launcher",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Standalone launcher for Novera Hub",
   "main": "main.js",
   "author": "Novera Hub",
