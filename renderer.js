@@ -666,7 +666,11 @@
               }
               return;
             }
-            setError((result && result.error) || 'Login failed. Please try again.');
+            var errMsg = (result && result.error) || 'Login failed. Please try again.';
+            if (errMsg.toLowerCase().indexOf('database') !== -1 || errMsg.toLowerCase().indexOf('not connected') !== -1) {
+              errMsg += ' The Novera Hub server cannot reach its database — check the Hub app\'s Turso/database configuration and that it is running.';
+            }
+            setError(errMsg);
           })
           .catch(function () {
             loginSubmit.disabled = false;

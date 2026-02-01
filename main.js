@@ -526,7 +526,45 @@ function fetchReleases(useToken) {
   });
 }
 
-/** Check GitHub releases for a newer version. Uses list of releases and picks highest semver. */
+/** Fallback: fetch releases from GitHub's Atom feed (github.com, not api.github.com) when API returns 404 (e.g. API blocked by network). */
+function fetchReleasesFromFeed() {
+  const pathSegments = GITHUB_REPO.split('/').map(encodeURIComponent);
+  const feedPath = '/' + pathSegments.join('/') + '/releases.atom';
+  return new Promise((resolve) => {
+    const opts = {
+      hostname: 'github.com',
+      path: feedPath,
+      method: 'GET',
+      headers: { 'User-Agent': 'NoveraHubLauncher/' + app.getVersion() + ' (https://github.com/deltaravo42/noverahub-launcher)' },
+    };
+    const req = https.request(opts, (res) => {
+      if (res.statusCode !== 200) return resolve(null);
+      let body = '';
+      res.on('data', (c) => { body += c; });
+      res.on('end', () => {
+        try {
+          const entryBlock = body.match(/<entry>([\s\S]*?)<\/entry>/);
+          if (!entryBlock) return resolve(null);
+          const entry = entryBlock[1];
+          const linkMatch = entry.match(/<link[^>]+href="([^"]+)"/);
+          const titleMatch = entry.match(/<title[^>]*>([^<]+)<\/title>/);
+          const link = linkMatch ? linkMatch[1].replace(/&amp;/g, '&') : null;
+          const title = titleMatch ? titleMatch[1].trim() : '';
+          const ver = (title.replace(/^Release\s+/i, '').replace(/^v/i, '') || '').trim();
+          if (link && ver) resolve({ releaseUrl: link, latestVersion: ver });
+          else resolve(null);
+        } catch (_) {
+          resolve(null);
+        }
+      });
+    });
+    req.on('error', () => resolve(null));
+    req.setTimeout(15000, () => { req.destroy(); resolve(null); });
+    req.end();
+  });
+}
+
+/** Check GitHub releases for a newer version. Uses API first; if 404, falls back to releases.atom feed (works when api.github.com is blocked). */
 ipcMain.handle('check-for-updates', async () => {
   const current = app.getVersion();
   const out = (obj) => ({ ...obj, currentVersion: current });
@@ -534,20 +572,26 @@ ipcMain.handle('check-for-updates', async () => {
   if (!GITHUB_REPO) return out({ hasUpdate: false, error: 'No GitHub repo configured. Set GITHUB_REPO in launcher .env.local and rebuild.' });
 
   // Always use public API (no token) so public repos like deltaravo42/noverahub-launcher work without any config
-  const res = await fetchReleases(false).catch((err) => ({ statusCode: 0, body: '', err }));
+  let res = await fetchReleases(false).catch((err) => ({ statusCode: 0, body: '', err }));
   if (res.err) return out({ hasUpdate: false, error: 'Network error: ' + (res.err.message || 'Check internet.') });
 
-  const statusCode = res.statusCode;
-  const body = res.body || '';
+  let statusCode = res.statusCode;
+  let body = res.body || '';
+
+  // When API returns 404 (e.g. api.github.com blocked by firewall/proxy), try releases Atom feed from github.com
+  if (statusCode === 404) {
+    const feedResult = await fetchReleasesFromFeed();
+    if (feedResult) {
+      const hasUpdate = compareVersions(feedResult.latestVersion, current) > 0;
+      return out({ hasUpdate, latestVersion: feedResult.latestVersion, releaseUrl: feedResult.releaseUrl, downloadUrl: '', body: '' });
+    }
+    const repoUrl = 'https://github.com/' + (GITHUB_REPO || 'owner/repo');
+    return out({ hasUpdate: false, error: 'Could not reach GitHub. Check your connection or try ' + repoUrl + '/releases later.' });
+  }
 
   if (statusCode !== 200) {
     if (statusCode === 401) return out({ hasUpdate: false, error: 'GitHub returned 401. Check your connection and try again.' });
     if (statusCode === 403) return out({ hasUpdate: false, error: 'GitHub rate limit or access denied. Try again later.' });
-    if (statusCode === 404) {
-      const repoHint = GITHUB_REPO ? ' (using: ' + GITHUB_REPO + ')' : '';
-      const repoUrl = 'https://github.com/' + (GITHUB_REPO || 'owner/repo');
-      return out({ hasUpdate: false, error: 'Repo not found or not public.' + repoHint + ' Check ' + repoUrl + ' — you can download the latest release from the Releases page there.' });
-    }
     return out({ hasUpdate: false, error: 'GitHub returned ' + statusCode });
   }
 
